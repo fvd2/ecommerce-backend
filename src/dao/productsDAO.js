@@ -38,7 +38,10 @@ module.exports = class ProductsDAO {
 						title: productTitle
 					})
 				}
-				return { success: true, data: foundProducts }
+                if (foundProducts) {
+                    return { success: true, data: foundProducts }
+                }
+                else return { success: false }
 			}
 		} catch (err) {
 			console.error(`Unable to find products: ${err}`)
