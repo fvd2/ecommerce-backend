@@ -52,43 +52,11 @@ module.exports = class UsersDAO {
 		}
 	}
 
-	static updateEmail = async (currentEmail, newEmail) => {
-		try {
-			const updateUserResult = await users.updateOne(
-				{
-					email: currentEmail
-				},
-				{ $set: { email: newEmail } }
-			)
-			const updateCredentialsResult = await credentials.updateOne(
-				{
-					email: currentEmail
-				},
-				{ $set: { email: newEmail } }
-			)
-			const updateSessionResult = await sessions.updateOne(
-				{
-					email: currentEmail
-				},
-				{ $set: { email: newEmail } }
-			)
-			if (
-				updateUserResult.modifiedCount === 1 &&
-				updateCredentialsResult.modifiedCount === 1 &&
-				updateSessionResult.modifiedCount === 1
-			)
-				return { success: true }
-			return { success: false }
-		} catch (err) {
-			console.error(`Failed to update email: ${err}`)
-			return { error: err }
-		}
-	}
-	static updateAccount = async (email, updateObj) => {
+	static update = async (userId, updateObj) => {
 		try {
 			const updateAccountResult = await users.updateOne(
 				{
-					email
+					_id: userId
 				},
 				{ $set: updateObj }
 			)

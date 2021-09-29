@@ -1,4 +1,5 @@
 const UsersDAO = require('../dao/usersDAO')
+const ObjectID = require('mongodb').ObjectID
 
 module.exports = {
 	getAccountDetails: async (req, res) => {
@@ -10,7 +11,7 @@ module.exports = {
 			return res.status(200).send(accountDetails)
 		return res.sendStatus(404)
 	},
-	delete: async (req, res) => {
+	deleteAccount: async (req, res) => {
         const email = res.locals.email
         if (!email) return res.sendStatus(400)
 		const { success } = await UsersDAO.deleteUser(email)
@@ -20,19 +21,10 @@ module.exports = {
 			})
 		return res.sendStatus(404)
 	},
-	updateEmail: async (req, res) => {
-		const currentEmail = res.locals.email
-		const newEmail = req.body.email
-		const result = await UsersDAO.updateEmail(currentEmail, newEmail)
-		if (result.success === true) return res.status(201).send({ message: `Successfully updated email address to ${newEmail}`})
-		return res.status(400).send({message: 'bad request'})
-	},
 	updateAccount: async (req, res) => {
-		const email = res.locals.email
+		const userId = res.locals.userId
 		const updateObj = req.body
-		console.log(email)
-		console.log(updateObj)
-		const updatedAccount = await UsersDAO.updateAccount(email, updateObj)
+		const updatedAccount = await UsersDAO.update(ObjectID(userId), updateObj)
 		if (updatedAccount.success === true) return res.status(201).send({ message: `Successfully updated account details`})
 		return res.status(400).send({message: 'bad request'})
 	},

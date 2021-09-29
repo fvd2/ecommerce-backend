@@ -11,7 +11,7 @@ module.exports = (req, res, next) => {
             if (err.name==='TokenExpiredError') return res.status(401).send({error: 'token expired'})
             res.status(401).send({ error: 'Invalid token'})
         } else {
-            res.locals.email = user.email
+            res.locals.userId = user.userId
             next() 
     }})
 }

@@ -57,12 +57,12 @@ module.exports = {
 				.send({ message: 'Entered credential are invalid' })
 		else {
 			const accessToken = jwt.sign(
-				{ email: req.body.email },
+				{ userId },
 				process.env.ACCESS_TOKEN_SECRET,
 				{ expiresIn: 60 * 15 }
 			)
 			const refreshToken = jwt.sign(
-				{ email: req.body.email },
+				{ userId },
 				process.env.REFRESH_TOKEN_SECRET,
 				{ expiresIn: 60 * 24 * 30 }
 			)
