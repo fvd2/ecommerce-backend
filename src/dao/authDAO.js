@@ -15,10 +15,10 @@ module.exports = class AuthDAO {
 		}
 	}
 
-	static login = async (email, refreshToken) => {
+	static login = async (userId, refreshToken) => {
 		try {
 			await sessions.updateOne(
-				{ email },
+				{ userId },
 				{ $set: { refreshToken } },
 				{ upsert: true }
 			)
@@ -31,7 +31,7 @@ module.exports = class AuthDAO {
 
     static findSession = async (refreshToken) => {
         try { 
-            const user = await sessions.findOne(refreshToken)
+            const user = await sessions.findOne({refreshToken})
             return user
         } catch (err) {
 			console.error(`Failed to find user session: ${err}`)
@@ -39,9 +39,9 @@ module.exports = class AuthDAO {
 		}
     }
 
-	static logout = async (email) => {
+	static logout = async (userId) => {
         try {
-            const { deletedCount } = await sessions.deleteOne({ email })
+            const { deletedCount } = await sessions.deleteOne({ userId })
 			if (deletedCount === 1) return { success: true }
 			return { success: false }
 		} catch (err) {

@@ -2,6 +2,8 @@ const jwt = require('jsonwebtoken')
 const AuthDAO = require('../dao/authDAO')
 const UsersDAO = require('../dao/usersDAO')
 const bcrypt = require('bcryptjs')
+const ObjectID = require('mongodb').ObjectID
+
 
 const createHash = async password => await bcrypt.hash(password, 10)
 const compareHash = async (password, hash) =>
@@ -46,9 +48,10 @@ module.exports = {
 		if (!req.body.password || req.body.password.length < 8) {
 			res.status(400).send({message: 'Password is empty or less than 8 characters'})
 		}
-		const userData = await UsersDAO.getUser(req.body.email)
-		if (!userData) return res.status(400).send({message: 'Unknown email address'})
-		if (!compareHash(req.body.password, userData.password))
+		const { _id: userId } = await UsersDAO.getUser(req.body.email)
+		if (!userId) return res.status(400).send({message: 'Unknown email address'})
+		const { password: passwordHash } = await UsersDAO.getCredentials(ObjectID(userId))
+		if (!compareHash(req.body.password, passwordHash))
 			return res
 				.status(401)
 				.send({ message: 'Entered credential are invalid' })
@@ -68,13 +71,13 @@ module.exports = {
 				httpOnly: true,
 				sameSite: true
 			}).json({ accessToken })
-			await AuthDAO.login(userData.email, refreshToken)
+			await AuthDAO.login(ObjectID(userId), refreshToken)
 		}
 	},
 	logout: async (req, res) => {
-		const user = await AuthDAO.findSession(req.cookies)
+		const user = await AuthDAO.findSession(req.cookies.refreshToken)
 		if (user) {
-			const result = await AuthDAO.logout(user.email)
+			const result = await AuthDAO.logout(user.userId)
 			if (result.success) {
 				res.status(200).send({
 					message: 'Successfully logged out user'
