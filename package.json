@@ -15,7 +15,6 @@
     "cookie-parser": "^1.4.5",
     "dotenv": "^10.0.0",
     "express": "^5.0.0-alpha.8",
-    "jshashes": "^1.0.8",
     "jsonwebtoken": "^8.5.1",
     "mongodb": "^3.7.0",
     "uuid": "^8.3.2"

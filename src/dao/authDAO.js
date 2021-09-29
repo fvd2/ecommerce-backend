@@ -54,7 +54,7 @@ module.exports = class AuthDAO {
 	static updateAccessToken = async (refreshToken) => {
         try {
             const user = await sessions.findOne({ refreshToken })
-            return { user }
+            return user
         } catch (err) {
             console.error(`Failed to renew access token`)
             return { error: err }

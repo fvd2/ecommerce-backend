@@ -64,7 +64,7 @@ module.exports = {
 				{ expiresIn: 60 * 24 * 30 }
 			)
 			res.cookie('refreshToken', refreshToken, {
-				secure: true,
+				secure: process.env.NODE_ENV !== 'DEVELOPMENT',
 				httpOnly: true,
 				sameSite: true
 			}).json({ accessToken })
@@ -83,8 +83,7 @@ module.exports = {
 		} else res.status(404).send({ error: 'Could not find session' })
 	},
 	token: async (req, res) => {
-		const user = await AuthDAO.updateAccessToken(req.cookies.RefreshToken)
-
+		const user = await AuthDAO.updateAccessToken(req.cookies.refreshToken)
 		if (user) {
 			const accessToken = jwt.sign(
 				{ email: user.email },
