@@ -21,7 +21,10 @@ module.exports = class UsersDAO {
 	static addUser = async (email, hash) => {
 		try {
 			const userId = await users.insertOne({ email })
-			await credentials.insertOne({ userId: userId.insertedId, password: hash })
+			await credentials.insertOne({
+				userId: userId.insertedId,
+				password: hash
+			})
 			return { success: true }
 		} catch (err) {
 			console.error(`Failed to register user: ${err}`)
@@ -37,14 +40,21 @@ module.exports = class UsersDAO {
 		return await users.findOne({ email })
 	}
 
-	static getAccountDetails = async email => {
-		return await users.findOne({ email })
+	static getAccountDetails = async userId => {
+		return await users.findOne({ _id: userId })
 	}
 
-	static deleteUser = async email => {
+	static deleteUser = async userId => {
 		try {
-			const deleteUserResult = await credentials.deleteOne({ email })
-			if (deleteUserResult.deletedCount === 1) return { success: true }
+			const deleteCredentialsResult = await credentials.deleteOne({
+				userId
+			})
+			const deleteAccountResult = await users.deleteOne({ _id: userId })
+			if (
+				deleteCredentialsResult.deletedCount === 1 &&
+				deleteAccountResult.deletedCount === 1
+			)
+				return { success: true }
 			return { success: false }
 		} catch (err) {
 			console.error(`Failed to delete user: ${err}`)
@@ -60,7 +70,8 @@ module.exports = class UsersDAO {
 				},
 				{ $set: updateObj }
 			)
-			if (updateAccountResult.modifiedCount === 1) return { success: true }
+			if (updateAccountResult.modifiedCount === 1)
+				return { success: true }
 			return { success: false }
 		} catch (err) {
 			console.error(`Failed to update account: ${err}`)

@@ -3,21 +3,20 @@ const ObjectID = require('mongodb').ObjectID
 
 module.exports = {
 	getAccountDetails: async (req, res) => {
-        const email = res.locals.email
-		console.log(email)
-        if (!email) return res.sendStatus(400)
-		const accountDetails = await UsersDAO.getAccountDetails(email)
+        const userId = res.locals.userId
+        if (!userId) return res.sendStatus(400)
+		const accountDetails = await UsersDAO.getAccountDetails(ObjectID(userId))
 		if (accountDetails)
 			return res.status(200).send(accountDetails)
 		return res.sendStatus(404)
 	},
 	deleteAccount: async (req, res) => {
-        const email = res.locals.email
-        if (!email) return res.sendStatus(400)
-		const { success } = await UsersDAO.deleteUser(email)
+        const userId = res.locals.userId
+        if (!userId) return res.sendStatus(400)
+		const { success } = await UsersDAO.deleteUser(ObjectID(userId))
 		if (success)
 			return res.status(200).send({
-				message: `Successfully deleted user: ${email}`,
+				message: `Successfully deleted user`,
 			})
 		return res.sendStatus(404)
 	},
