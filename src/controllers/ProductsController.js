@@ -1,5 +1,5 @@
 const ProductsDAO = require('../dao/productsDAO')
-const { v4: uuidv4 } = require('uuid')
+const ObjectID = require('mongodb').ObjectID
 
 module.exports = {
 	getAllProducts: async (req, res) => {
@@ -20,13 +20,8 @@ module.exports = {
 	addNewProduct: async (req, res) => {
 		// TODO: limit to users with administrator rights (implement user scopes)
 		const newProduct = {
-			id: uuidv4(),
-			title: req.body.title,
-			description: req.body.description,
-			category: req.body.category,
-			image: req.body.image,
-			rating: req.body.rating,
-			votes: req.body.votes
+			_id: new ObjectID(),
+			...req.body
 		}
 		// check for duplicate title
 		const titleSearch = await ProductsDAO.get({
@@ -55,7 +50,7 @@ module.exports = {
 			category: null,
 			limit: +req.query.limit || 0
 		})
-        console.log(req)
+		console.log(req)
 		if (singleProduct.success) {
 			res.status(200).send(singleProduct.data)
 		} else {
@@ -65,16 +60,15 @@ module.exports = {
 	updateExistingProduct: async (req, res) => {
 		// TODO: limit to users with administrator rights (implement user scopes)
 		const updates = req.body
-		const updatedProduct = await ProductsDAO.patch(
-			req.params.id,
-			updates
-		)
-        if (updatedProduct.success) {
-            res.status(200).send(updatedProduct.data)
-        }
-        else {
-            res.status(404).send({...updatedProduct, error: 'Could not update product details; did you enter any modifications?'})
-        }
+		const updatedProduct = await ProductsDAO.patch(req.params.id, updates)
+		if (updatedProduct.success) {
+			res.status(200).send(updatedProduct.data)
+		} else {
+			res.status(404).send({
+				...updatedProduct,
+				error: 'Could not update product details; did you enter any modifications?'
+			})
+		}
 	},
 	getProductsInCategory: async (req, res) => {
 		const categoryProducts = await ProductsDAO.get({
@@ -89,5 +83,5 @@ module.exports = {
 		} else {
 			res.status(404).send(categoryProducts)
 		}
-	} 
+	}
 }

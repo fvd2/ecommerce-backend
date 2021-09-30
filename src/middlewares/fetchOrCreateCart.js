@@ -1,4 +1,4 @@
-const { v4: uuidv4 } = require('uuid')
+const ObjectID = require('mongodb').ObjectID
 const CartDAO = require('../dao/cartDAO')
 
 module.exports = async (req, res, next) => {
@@ -10,15 +10,15 @@ module.exports = async (req, res, next) => {
 		if (res.locals.userId) {
 			await CartDAO.put({
 				shoppingSessionId: res.locals.shoppingSessionId,
-				cartUpdateObj: { userId: res.locals.userId }
+				cartUpdateObj: { userId: ObjectID(res.locals.userId) }
 			})
 			// TODO: merge products with any outstanding cart of user
 		} 
 	} else {
-		res.locals.shoppingSessionId = uuidv4()
+		res.locals.shoppingSessionId = new ObjectID()
 		await CartDAO.put({
 			shoppingSessionId: res.locals.shoppingSessionId,
-			cartUpdateObj: { userId: res.locals.userId }
+			cartUpdateObj: { userId: ObjectID(res.locals.userId) }
 		})
 		res.cookie('shopping_session_id', res.locals.shoppingSessionId, {
 			secure: process.env.NODE_ENV !== 'DEVELOPMENT',

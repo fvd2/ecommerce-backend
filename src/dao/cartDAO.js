@@ -17,7 +17,7 @@ module.exports = class CartDAO {
 
 	static get = async shoppingSessionId => {
 		try {
-			const cartData = await cart.findOne({ id: shoppingSessionId })
+			const cartData = await cart.findOne({ _id: shoppingSessionId })
 			if (cartData) {
 				return { success: true, data: cartData }
 			} else {
@@ -32,7 +32,7 @@ module.exports = class CartDAO {
 	static put = async ({ shoppingSessionId, cartUpdateObj }) => {
 		try {
 			const updatedCart = await cart.updateOne(
-				{ id: shoppingSessionId },
+				{ _id: shoppingSessionId },
 				{
 					$set: cartUpdateObj
 				},
