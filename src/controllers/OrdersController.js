@@ -1,66 +1,67 @@
 const { createMollieClient } = require('@mollie/api-client')
 const OrdersDAO = require('../dao/ordersDAO')
-const { v4: uuidv4 } = require('uuid')
 const ObjectID = require('mongodb').ObjectID
+const mollieClient = createMollieClient({ apiKey: process.env.MOLLIE_TEST_API_KEY })
 
 module.exports = {
 	getOrderStatus: () => {},
 	createOrder: async (req, res) => {
 		const createdOrder = await OrdersDAO.post(res.locals.shoppingSessionId)
-		res.status(200).send(createdOrder)
-
-		// const orderId = uuidv4()
-		// const orderObject = {
-		//     amount: {
-		//         currency: 'EUR',
-		//         value // total amount
-		//     },
-		//     orderNumber, // accepts string, should be id
-		//     lines: {
-		//         category: // source: product category
-		//         name:  // source: product name
-
-		//     },
-		//     billingAddress: {
-		//         streetAndNumber,
-		//         streetAdditional,
-		//         postalCode,
-		//         city,
-		//         country // only accept NL
-		//     },
-		//     shippingAddress, // source: user or form - default: same as billingAddress
-		//     redirectUrl, // should be /order/:id
-		//     webhookUrl,
-		//     locale, // default to en_US
-		//     method, // payment method, default to: [ideal, paypal, creditcard]
-
-		// }
-
-		// // create order within web application
-
-		// // create order for payment processor
-		// const mollieClient = createMollieClient({ apiKey: process.env.MOLLIE_TEST_API_KEY })
-
-		// // TODO: change to create order and populate object
-		// const createPayment = async () => {
-		//     const payment = await mollieClient.payments.create({
-		//         amount: {
-		//             currency: 'EUR',
-		//             value: '10.00'
-		//         },
-		//         method: 'ideal',
-		//         description: 'test',
-		//         redirectUrl: 'https://freekvandam.nl/shop/bla/',
-		//         webhookUrl: 'https://freekvandam.nl/payments/webhook/'
-		//     })
-		// }
+		res.status(201).send({ message: 'Successfully created order' })
 	},
-    updateOrderStatus: async (req, res) => {
-        // TODO: build webhook that checks payment status and updates it if necessary
-        const orderId = req.body
-        // check payment status
+	initiatePaymentProcess: async (req, res) => {
 
-        // update payment status
-        // OrdersDAO.update(orderId)
-    }
+        console.log(req.params.id)
+        const mollieClient = createMollieClient({ apiKey: process.env.MOLLIE_TEST_API_KEY })
+		const retrievedOrder = await OrdersDAO.get(req.params.id)
+		const productLines = retrievedOrder.products
+			.map(product => {
+				return {
+					name: product.title,
+					quantity: product.productQuantity,
+					unitPrice: {currency: 'EUR', value: product.price.toFixed(2).toString()},
+					totalAmount: {currency: 'EUR', value: product.totalAmount.toFixed(2).toString()},
+					vatRate: product.vatRate*100,
+					vatAmount: {currency: 'EUR', value: product.vatAmount.toFixed(2).toString()},
+					discountAmount: {currency: 'EUR', value: product.discountAmount.toFixed(2).toString()}
+				}
+			})
+
+		const mollieOrderObject = {
+		    amount: {
+		        currency: 'EUR',
+		        value: retrievedOrder.totalAmount.toFixed(2).toString()
+		    },
+		    orderNumber: new ObjectID(),
+		    lines: productLines,
+		    billingAddress: retrievedOrder.user.billingAddress,
+		    shippingAddress: retrievedOrder.user.shippingAddress,
+		    redirectUrl: `https://freekvandam.nl/orders/${req.params.id}/`,
+		    webhookUrl: 'http://20dd-82-174-148-183.ngrok.io/orders/webhook',
+		    locale: 'en_US', // default to en_US
+		    method: ['ideal', 'paypal', 'creditcard']
+		}
+        try {
+            const createOrder = await mollieClient.orders.create(mollieOrderObject)
+            console.log(createOrder)
+        } catch(err) {
+            console.error(`Failed to initiate mollie payment process: ${err}`)
+        }
+    },
+
+	updateOrderStatus: async (req, res) => {
+		// TODO: build webhook that checks payment status and updates it if necessary
+		const orderId = req.body.orderId
+		// check payment status
+        try {
+            const findOrder = await mollieClient.orders.get(orderId)
+            console.log(findOrder)
+            res.status(200)
+        } catch(err) {
+            console.error(`Unable to get mollie order: ${err}`)
+        }
+
+		// update payment status
+		// OrdersDAO.update(orderId)
+	}
 }

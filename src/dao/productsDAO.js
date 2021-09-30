@@ -31,7 +31,7 @@ module.exports = class ProductsDAO {
 			}
 			if (type === 'single') {
 				if (productId) {
-					foundProducts = await products.findOne({ id: productId })
+					foundProducts = await products.findOne({ _id: productId })
 				}
 				if (productTitle) {
 					foundProducts = await products.findOne({
@@ -64,7 +64,7 @@ module.exports = class ProductsDAO {
 	static patch = async (id, updates) => {
 		try {
 			const patchResult = await products.updateOne(
-				{ id },
+				{ _id: id },
 				{ $set: { ...updates } }
 			)
 			if (

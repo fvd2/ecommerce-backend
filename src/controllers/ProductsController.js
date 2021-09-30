@@ -45,12 +45,11 @@ module.exports = {
 	getSingleProduct: async (req, res) => {
 		const singleProduct = await ProductsDAO.get({
 			type: 'single', // alternative values: category, single
-			productId: req.params.id,
+			productId: ObjectID(req.params.id),
 			productTitle: null,
 			category: null,
 			limit: +req.query.limit || 0
 		})
-		console.log(req)
 		if (singleProduct.success) {
 			res.status(200).send(singleProduct.data)
 		} else {
@@ -60,7 +59,7 @@ module.exports = {
 	updateExistingProduct: async (req, res) => {
 		// TODO: limit to users with administrator rights (implement user scopes)
 		const updates = req.body
-		const updatedProduct = await ProductsDAO.patch(req.params.id, updates)
+		const updatedProduct = await ProductsDAO.patch(ObjectID(req.params.id), updates)
 		if (updatedProduct.success) {
 			res.status(200).send(updatedProduct.data)
 		} else {

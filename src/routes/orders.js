@@ -5,6 +5,7 @@ const router = require('express').Router()
 
 router.post('/', fetchOrCreateCart, OrdersController.createOrder)
 router.get('/:id', fetchOrCreateCart, OrdersController.getOrderStatus)
+router.post('/:id/pay', fetchOrCreateCart, OrdersController.initiatePaymentProcess)
 router.post('/webhook', OrdersController.updateOrderStatus)
 
 module.exports = router
