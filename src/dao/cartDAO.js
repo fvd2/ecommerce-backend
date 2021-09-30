@@ -15,23 +15,6 @@ module.exports = class CartDAO {
 		}
 	}
 
-	static set = async (shoppingSessionId, email) => {
-		try {
-			const newCart = await cart.insertOne({
-				id: shoppingSessionId,
-				date: Date.now(),
-				userEmail: email,
-				products: {}
-			})
-			if (newCart.insertedCount === 1) {
-				return { success: true }
-			} else return { success: false }
-		} catch (err) {
-			console.error(`Unable to create new cart: ${err}`)
-			return { error: err }
-		}
-	}
-
 	static get = async shoppingSessionId => {
 		try {
 			const cartData = await cart.findOne({ id: shoppingSessionId })
@@ -46,23 +29,30 @@ module.exports = class CartDAO {
 		}
 	}
 
-	static put = async ({ shoppingSessionId, updatedProducts }) => {
+	static put = async ({ shoppingSessionId, cartUpdateObj }) => {
 		try {
-			console.log(updatedProducts)
 			const updatedCart = await cart.updateOne(
 				{ id: shoppingSessionId },
 				{
-					$set: {
-						products: updatedProducts
-					}
-				}
+					$set: cartUpdateObj
+				},
+				{ upsert: true }
 			)
+
 			if (updatedCart.modifiedCount === 1) {
 				return { success: true }
 			} else return { success: false }
 		} catch (err) {
-			console.error(`Unable to add product to cart: ${err}`)
+			console.error(`Unable to modify cart: ${err}`)
 			return { error: err }
+		}
+	}
+
+	static merge = async (userId) => {
+		try {
+			// TODO: merge products with any outstanding cart of user
+		} catch (err) {
+			console.error(`Unable to merge carts: ${err}`)
 		}
 	}
 }

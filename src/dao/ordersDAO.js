@@ -18,7 +18,7 @@ module.exports = class OrdersDAO {
 	}
 
 	// create new order
-	static post = async (userEmail) => {
+	static post = async userId => {
 		// aggregation pipeline to combine cart (product ID and quantity),
 		// product details, and user info
 
@@ -27,9 +27,9 @@ module.exports = class OrdersDAO {
 		// 2) total amount
 		try {
 			const pipeline = [
-                {
-                    $match: { userEmail }
-                },
+				{
+					$match: { userId }
+				},
 				{
 					$lookup: {
 						from: 'users',
@@ -37,7 +37,7 @@ module.exports = class OrdersDAO {
 						foreignField: 'email',
 						as: 'customer'
 					}
-				},
+				}
 				// {
 				// 	$lookup: {
 				// 		from: 'products',
@@ -49,7 +49,7 @@ module.exports = class OrdersDAO {
 				// { $out: 'orders' }
 			]
 			const aggregatedOrder = await cart.aggregate(pipeline).toArray()
-            return aggregatedOrder
+			return aggregatedOrder
 		} catch (err) {
 			console.error(
 				`Could not execute order aggregation pipeline: ${err}`

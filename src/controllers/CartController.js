@@ -13,7 +13,7 @@ module.exports = {
 	updateCart: async (req, res) => {
 		const addProductObject = {
 			shoppingSessionId: res.locals.shoppingSessionId,
-			updatedProducts: req.body
+			cartUpdateObj: { products: req.body }
 		}
 		const addProductResult = await CartDAO.put(addProductObject)
 		if (addProductResult.success) {
