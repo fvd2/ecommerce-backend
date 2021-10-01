@@ -15,7 +15,6 @@ module.exports = class OrdersDAO {
 			console.error(
 				`Could not establish collection handle in ordersDAO: ${err}`
 			)
-			return { error: err }
 		}
 	}
 
@@ -108,7 +107,7 @@ module.exports = class OrdersDAO {
 				},
 				{
 					$addFields: {
-						orderStatus: 'created'
+						orderStatus: 'saved' // initial status, which is later overwritten by mollie order status
 					}
 				},
 				{
@@ -121,18 +120,29 @@ module.exports = class OrdersDAO {
 			console.error(
 				`Could not execute order aggregation pipeline: ${err}`
 			)
+			return { success: false, error: err }
 		}
 	}
 
 	static get = async orderId => {
 		try {
-			console.log('hi!')
-			return await orders.findOne({ _id: ObjectID(orderId) })
+			const fetchedOrder = await orders.findOne({
+				_id: ObjectID(orderId)
+			})
+			return { success: true, data: fetchedOrder }
 		} catch (err) {
 			console.error(`Could not find order: ${err}`)
+			return { success: false, error: err }
 		}
 	}
 
 	// update after webhook call
-	static update = () => {}
+	static update = async (filterObj, updateObj) => {
+		try {
+			orders.updateOne(filterObj, { $set: updateObj })
+		} catch (err) {
+			console.error(`Unable to update order: ${err}`)
+			return { success: false, error: err }
+		}
+	}
 }
