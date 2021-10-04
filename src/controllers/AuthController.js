@@ -112,7 +112,7 @@ module.exports = {
 			res.status(200).send({ accessToken })
 		} else
 			res.status(401).send({
-				error: 'no refresh token was found - please login again'
+				error: 'could not find active session - please login again'
 			})
 	}
 }

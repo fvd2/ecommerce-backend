@@ -22,6 +22,13 @@ module.exports = class ProductsDAO {
 				foundProducts = await products.find({}).limit(limit).toArray()
 				return { success: true, data: foundProducts }
 			}
+			if (type === 'cart') {
+				foundProducts = await products
+					.find({ _id: { $in: productId } })
+					.limit(limit)
+					.toArray()
+				return { success: true, data: foundProducts }
+			}
 			if (type === 'category') {
 				foundProducts = await products
 					.find({ category })
@@ -38,10 +45,9 @@ module.exports = class ProductsDAO {
 						title: productTitle
 					})
 				}
-                if (foundProducts) {
-                    return { success: true, data: foundProducts }
-                }
-                else return { success: false }
+				if (foundProducts) {
+					return { success: true, data: foundProducts }
+				} else return { success: false }
 			}
 		} catch (err) {
 			console.error(`Unable to find products: ${err}`)
@@ -68,14 +74,13 @@ module.exports = class ProductsDAO {
 				{ $set: { ...updates } }
 			)
 			if (
-				(patchResult.matchedCount === 1) &&
-				(patchResult.modifiedCount === 1)
+				patchResult.matchedCount === 1 &&
+				patchResult.modifiedCount === 1
 			) {
 				return { success: true }
+			} else {
+				return { success: false }
 			}
-            else {
-                return { success: false }
-            }
 		} catch (err) {
 			console.error(`Unable to update existing product: ${err}`)
 			return { success: false, error: err }

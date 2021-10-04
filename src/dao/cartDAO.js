@@ -48,6 +48,8 @@ module.exports = class CartDAO {
 		}
 	}
 
+
+
 	static merge = async (userId) => {
 		try {
 			// TODO: merge products with any outstanding cart of user

@@ -1,9 +1,10 @@
 const CartDAO = require('../dao/cartDAO')
+const ObjectID = require('mongodb').ObjectID
 
 module.exports = {
 	fetchCart: async (req, res) => {
 		const shoppingSessionId = res.locals.shoppingSessionId
-		const cartData = await CartDAO.get(shoppingSessionId)
+		const cartData = await CartDAO.get(ObjectID(shoppingSessionId))
 		if (cartData.success) {
 			res.status(200).send(cartData.data)
 		} else {
