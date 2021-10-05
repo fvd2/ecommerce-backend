@@ -19,26 +19,41 @@ module.exports = {
 	},
 	addNewProduct: async (req, res) => {
 		// TODO: limit to users with administrator rights (implement user scopes)
-		const newProduct = {
-			_id: new ObjectID(),
-			...req.body
-		}
-		// check for duplicate title
-		const titleSearch = await ProductsDAO.get({
-			type: 'single', // alternative values: category, single
-			productId: null,
-			productTitle: req.body.title,
-			category: null,
-			limit: +req.query.limit || 0
-		})
-		if (titleSearch.success) {
-			res.status(409).send({ error: 'Product title already exists' })
-		} else {
-			const postProduct = await ProductsDAO.post(newProduct)
-			if (postProduct.success) {
+		let productObj
+		let postResult
+		
+		// if multiple products: insertMany, else: insertOne and check for duplicate title
+		if (Array.isArray(req.body)) {
+			console.log(req.body)
+			postResult = await ProductsDAO.post('many', req.body)
+			if (postResult.success) {
 				res.sendStatus(201)
 			} else {
 				res.sendStatus(404)
+			}
+		} 
+		else {
+			const productObj = {
+				_id: new ObjectID(),
+				...req.body
+			}
+			// check for duplicate title
+			const titleSearch = await ProductsDAO.get({
+				type: 'single', // alternative values: category, single
+				productId: null,
+				productTitle: req.body.title,
+				category: null,
+				limit: +req.query.limit || 0
+			})
+			if (titleSearch.success) {
+				res.status(409).send({ error: 'Product title already exists' })
+			} else {
+				postProduct = await ProductsDAO.post(productObj)
+				if (postProduct.success) {
+					res.sendStatus(201)
+				} else {
+					res.sendStatus(404)
+				}
 			}
 		}
 	},

@@ -55,10 +55,16 @@ module.exports = class ProductsDAO {
 		}
 	}
 
-	static post = async newProduct => {
+	static post = async (type, productObj) => {
+		let postResult
 		try {
-			const postResult = await products.insertOne(newProduct)
-			if (postResult.insertedCount === 1) {
+			if (type === 'many') {
+				postResult = await products.insertMany(productObj)
+			}
+			else {
+				postResult = await products.insertOne(productObj)
+			}
+			if (postResult.insertedCount >= 1) {
 				return { success: true }
 			}
 		} catch (err) {
