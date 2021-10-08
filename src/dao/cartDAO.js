@@ -1,4 +1,5 @@
 let cart
+const ObjectID = require('mongodb').ObjectID
 
 module.exports = class CartDAO {
 	static injectDB = async db => {
@@ -17,7 +18,7 @@ module.exports = class CartDAO {
 
 	static get = async shoppingSessionId => {
 		try {
-			const cartData = await cart.findOne({ _id: shoppingSessionId })
+			const cartData = await cart.findOne({ _id: ObjectID(shoppingSessionId) })
 			if (cartData) {
 				return { success: true, data: cartData }
 			} else {
@@ -32,7 +33,7 @@ module.exports = class CartDAO {
 	static put = async ({ shoppingSessionId, cartUpdateObj }) => {
 		try {
 			const updatedCart = await cart.updateOne(
-				{ _id: shoppingSessionId },
+				{ _id: ObjectID(shoppingSessionId) },
 				{
 					$set: cartUpdateObj
 				},

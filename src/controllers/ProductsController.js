@@ -24,7 +24,6 @@ module.exports = {
 		
 		// if multiple products: insertMany, else: insertOne and check for duplicate title
 		if (Array.isArray(req.body)) {
-			console.log(req.body)
 			postResult = await ProductsDAO.post('many', req.body)
 			if (postResult.success) {
 				res.sendStatus(201)

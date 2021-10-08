@@ -19,27 +19,20 @@ module.exports = class OrdersDAO {
 	}
 
 	// create new order
-	static post = async shoppingSessionId => {
+	static post = async ({ userId, shoppingSessionId }) => {
 		// aggregation pipeline to combine cart (product ID and quantity),
 		// product details, and user info
 		try {
-			const pipeline = [
+			const orderId = new ObjectID()
+
+			// pipeline stages (separated to conditionally manage logged in user data)
+			const findCartAndMergeProductsStage = [
 				// find shopping session
 				{
-					$match: { _id: shoppingSessionId }
+					$match: { _id: ObjectID(shoppingSessionId) }
 				},
 
-				// add relevant user data from users collection
-				{
-					$lookup: {
-						from: 'users',
-						localField: 'userId',
-						foreignField: '_id',
-						as: 'user'
-					}
-				},
-				// flatten user and products arrays
-				{ $unwind: '$user' },
+				// flatten products array
 				{ $unwind: '$products' },
 
 				// add product data for each product in user cart and calculate product total amount
@@ -95,10 +88,31 @@ module.exports = class OrdersDAO {
 					}
 				},
 				// calculate total amount for the order
-				{ $unwind: '$products' },
+				{ $unwind: '$products' }
+			]
+
+			const handleUserStage = () => {
+				if (userId) {
+					return [
+						// add relevant user data from users collection
+						{
+							$lookup: {
+								from: 'users',
+								localField: 'userId',
+								foreignField: '_id',
+								as: 'user'
+							}
+						},
+						{ $unwind: '$user' }
+					]
+				} else {
+					return [{ $addFields: { user: null } }]
+				}
+			}
+			const createOrderDocumentStage = [
 				{
 					$group: {
-						_id: new ObjectID(),
+						_id: orderId,
 						cartId: { $first: '$_id' },
 						user: { $first: '$user' },
 						products: { $addToSet: '$products' },
@@ -107,15 +121,26 @@ module.exports = class OrdersDAO {
 				},
 				{
 					$addFields: {
-						orderStatus: 'saved' // initial status, which is later overwritten by mollie order status
+						status: 'saved' // initial status, which is later overwritten by mollie order status
 					}
 				},
 				{
-					$out: 'orders'
+					$merge: {
+						into: 'orders',
+						on: '_id',
+						whenMatched: 'replace',
+						whenNotMatched: 'insert'
+					}
 				}
 			]
-			const aggregatedOrder = await cart.aggregate(pipeline)
-			return await aggregatedOrder.toArray()
+
+			const pipeline = [
+				...findCartAndMergeProductsStage,
+				...handleUserStage(),
+				...createOrderDocumentStage
+			]
+			await cart.aggregate(pipeline).toArray()
+			return orderId
 		} catch (err) {
 			console.error(
 				`Could not execute order aggregation pipeline: ${err}`
@@ -124,11 +149,9 @@ module.exports = class OrdersDAO {
 		}
 	}
 
-	static get = async orderId => {
+	static get = async filterObj => {
 		try {
-			const fetchedOrder = await orders.findOne({
-				_id: ObjectID(orderId)
-			})
+			const fetchedOrder = await orders.findOne(filterObj)
 			return { success: true, data: fetchedOrder }
 		} catch (err) {
 			console.error(`Could not find order: ${err}`)
@@ -139,7 +162,16 @@ module.exports = class OrdersDAO {
 	// update after webhook call
 	static update = async (filterObj, updateObj) => {
 		try {
-			orders.updateOne(filterObj, { $set: updateObj })
+			const updateResult = await orders.updateOne(filterObj, {
+				$set: updateObj
+			})
+			if (updateObj.status !== 'saved') {
+				const { cartId } = await orders.findOne(filterObj)
+				await cart.deleteOne({ _id: ObjectID(cartId) })
+			}
+			if (updateResult.modifiedCount === 1) {
+				return { success: true }
+			} else return { success: false }
 		} catch (err) {
 			console.error(`Unable to update order: ${err}`)
 			return { success: false, error: err }

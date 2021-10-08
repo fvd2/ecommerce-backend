@@ -8,7 +8,7 @@ const mollieClient = createMollieClient({
 module.exports = {
 	getOrderStatus: async (req, res) => {
 		const orderId = req.params.id
-		const order = await OrdersDAO.get(orderId)
+		const order = await OrdersDAO.get({ _id: ObjectID(orderId) })
 		if (order.success) {
 			res.status(200).send(order.data)
 		} else {
@@ -16,15 +16,41 @@ module.exports = {
 		}
 	},
 	createOrder: async (req, res) => {
-		await OrdersDAO.post(res.locals.shoppingSessionId)
-		res.status(201).send({ message: 'Successfully created order' })
+		// check if an order with this orderId already exists
+		// if not: create new order
+		// if so:
+		// 		status === 'saved' && redirect to checkoutForm
+		//		status === 'paid', 'failed', etc. && redirect to orderConfirmation
+		const shoppingSessionId = res.locals.shoppingSessionId
+		const order = await OrdersDAO.get({
+			cartId: ObjectID(shoppingSessionId)
+		})
+		if (order.data) {
+			res.status(409).send({
+				message:
+					'There is already an order associated with this cart id',
+				orderId: order.data._id,
+				status: order.data.status
+			})
+		} else {
+			const result = await OrdersDAO.post(res.locals)
+			if (result.success) {
+				res.status(201).send({
+					message: 'Successfully created order',
+					orderId: result.orderId,
+					status: 'saved'
+				})
+			} else {
+				res.status(404)
+			}
+		}
 	},
 	initiatePaymentProcess: async (req, res) => {
 		const mollieClient = createMollieClient({
 			apiKey: process.env.MOLLIE_TEST_API_KEY
 		})
-		const retrievedOrder = await OrdersDAO.get(req.params.id)
-		const productLines = retrievedOrder.products.map(product => {
+		const { data } = await OrdersDAO.get(ObjectID(req.params.id))
+		const productLines = await data.products.map(product => {
 			return {
 				name: product.title,
 				quantity: product.productQuantity,
@@ -51,14 +77,14 @@ module.exports = {
 		const mollieOrderObject = {
 			amount: {
 				currency: 'EUR',
-				value: retrievedOrder.totalAmount.toFixed(2).toString()
+				value: data.totalAmount.toFixed(2).toString()
 			},
-			orderNumber: res.locals.shoppingSessionId,
+			orderNumber: data.cartId,
 			lines: productLines,
-			billingAddress: retrievedOrder.user.billingAddress,
-			shippingAddress: retrievedOrder.user.shippingAddress,
+			billingAddress: data.user.billingAddress,
+			shippingAddress: data.user.shippingAddress,
 			redirectUrl: `https://freekvandam.nl/ecom/orders/${req.params.id}/`,
-			webhookUrl: 'https://027a-82-174-148-183.ngrok.io/orders/webhook',
+			webhookUrl: 'http://00e4-82-174-148-183.ngrok.io/orders/webhook',
 			locale: 'en_US', // default to en_US
 			method: ['ideal', 'paypal', 'creditcard']
 		}
@@ -67,30 +93,58 @@ module.exports = {
 				mollieOrderObject
 			)
 			await OrdersDAO.update(
-				{ cartId: res.locals.shoppingSessionId },
+				{ cartId: ObjectID(res.locals.shoppingSessionId) },
 				{
 					mollieOrderId: createdOrder.id,
 					status: createdOrder.status
 				}
 			)
-			res.status(201).send({
-				success: true,
-				checkoutUrl: createdOrder._links.checkout.href
-			})
+			if (createdOrder.status === 'paid') {
+				res.clearCookie('shopping_session_id')
+				res.status(201).send({
+					success: true,
+					checkoutUrl: createdOrder._links.checkout.href
+				})
+			} else {
+				res.status(201).send({
+					success: true,
+					checkoutUrl: createdOrder._links.checkout.href
+				})
+			}
 		} catch (err) {
 			console.error(`Failed to initiate mollie payment process: ${err}`)
 		}
 	},
 
+	// update order (e.g. user address) details after checkout form is filled
+
+	updateOrderDetails: async (req, res) => {
+		const { id, ...updatedOrderDetails } = req.body
+		try {
+			const updateResult = await OrdersDAO.update(
+				{ _id: ObjectID(id) },
+				{ user: updatedOrderDetails }
+			)
+			if (updateResult.success) {
+				res.status(200).send({
+					success: true,
+					message: 'Updated order details'
+				})
+			}
+		} catch (err) {
+			console.error(`Unable to update order details: ${err}`)
+		}
+	},
+
 	updateOrderStatus: async (req, res) => {
 		// webhook that receives orderId of updated mollie order, and then updates the status locally
-		const orderId = req.body.orderId
+		const orderId = req.body.id
 		try {
 			const { status } = await mollieClient.orders.get(orderId)
 			await OrdersDAO.update({ mollieOrderId: orderId }, { status })
 			res.status(200).send({
 				message: `Updated order status to ${status}`,
-				orderStatus: status
+				status
 			})
 		} catch (err) {
 			console.error(`Unable to update order status: ${err}`)

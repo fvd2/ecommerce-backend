@@ -31,7 +31,7 @@ module.exports = class ProductsDAO {
 			}
 			if (type === 'category') {
 				foundProducts = await products
-					.find({ category })
+					.find({ brand: category })
 					.limit(limit)
 					.toArray()
 				return { success: true, data: foundProducts }
