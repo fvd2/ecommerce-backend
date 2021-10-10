@@ -16,11 +16,6 @@ module.exports = {
 		}
 	},
 	createOrder: async (req, res) => {
-		// check if an order with this orderId already exists
-		// if not: create new order
-		// if so:
-		// 		status === 'saved' && redirect to checkoutForm
-		//		status === 'paid', 'failed', etc. && redirect to orderConfirmation
 		const shoppingSessionId = res.locals.shoppingSessionId
 		const order = await OrdersDAO.get({
 			cartId: ObjectID(shoppingSessionId)
@@ -83,8 +78,8 @@ module.exports = {
 			lines: productLines,
 			billingAddress: data.user.billingAddress,
 			shippingAddress: data.user.shippingAddress,
-			redirectUrl: `https://freekvandam.nl/ecom/orders/${req.params.id}/`,
-			webhookUrl: 'http://00e4-82-174-148-183.ngrok.io/orders/webhook',
+			redirectUrl: `https://freekvandam.nl/ecom/order/${req.params.id}/`,
+			webhookUrl: 'http://freekvandam.nl/ecom/api/orders/webhook',
 			locale: 'en_US', // default to en_US
 			method: ['ideal', 'paypal', 'creditcard']
 		}

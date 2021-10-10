@@ -18,7 +18,7 @@ module.exports = class CartDAO {
 
 	static get = async shoppingSessionId => {
 		try {
-			const cartData = await cart.findOne({ _id: ObjectID(shoppingSessionId) })
+			const cartData = await cart.findOne({ _id: shoppingSessionId })
 			if (cartData) {
 				return { success: true, data: cartData }
 			} else {
@@ -49,13 +49,12 @@ module.exports = class CartDAO {
 		}
 	}
 
-
-
-	static merge = async (userId) => {
-		try {
-			// TODO: merge products with any outstanding cart of user
-		} catch (err) {
-			console.error(`Unable to merge carts: ${err}`)
-		}
-	}
+	// TODO: implement merge
+	// static merge = async (userId) => {
+	// 	try {
+	// 		// TODO: merge products with any outstanding cart of user
+	// 	} catch (err) {
+	// 		console.error(`Unable to merge carts: ${err}`)
+	// 	}
+	// }
 }

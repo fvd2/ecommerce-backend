@@ -5,14 +5,24 @@ module.exports = async (req, res, next) => {
 	// check if there is an existing shopping session
 	res.locals.shoppingSessionId = req.cookies.shopping_session_id
 	if (req.cookies.shopping_session_id) {
-		// delete any invalid remaining shopping session (it may have been deleted after order was paid)
-		const doesSessionExist = await CartDAO.get(res.locals.shoppingSessionId)
+		// delete any invalid remaining shopping session (i.e. when payment has been initiated)
+		const doesSessionExist = await CartDAO.get(
+			ObjectID(res.locals.shoppingSessionId)
+		)
 		if (!doesSessionExist.success) {
 			res.clearCookie('shopping_session_id')
-			res.cookie(
-				'shopping_session_id',
-				res.locals.shoppingSessionId
-			)
+			const newSession = new ObjectID()
+			await CartDAO.put({
+				shoppingSessionId: newSession,
+				cartUpdateObj: {
+					products: []
+				}
+			})
+			res.cookie('shopping_session_id', newSession.toHexString(), {
+				secure: process.env.NODE_ENV !== 'DEVELOPMENT',
+				httpOnly: true,
+				sameSite: true
+			})
 		}
 
 		// if accessToken is used, add userId to cart
@@ -39,14 +49,13 @@ module.exports = async (req, res, next) => {
 			await CartDAO.put({
 				shoppingSessionId: res.locals.shoppingSessionId,
 				cartUpdateObj: {
-					userId: ObjectID(res.locals.userId),
 					products: []
 				}
 			})
 		}
 		res.cookie(
 			'shopping_session_id',
-			res.locals.shoppingSessionId,
+			res.locals.shoppingSessionId.toHexString(),
 			{
 				secure: process.env.NODE_ENV !== 'DEVELOPMENT',
 				httpOnly: true,

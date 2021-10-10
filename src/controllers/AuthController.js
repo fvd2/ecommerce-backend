@@ -94,6 +94,8 @@ module.exports = {
 		if (user) {
 			const result = await AuthDAO.logout(user.userId)
 			if (result.success) {
+				res.clearCookie('shopping_session_id')
+				res.clearCookie('refreshToken')
 				res.status(200).send({
 					message: 'Successfully logged out user'
 				})
