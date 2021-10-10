@@ -14,4 +14,5 @@ RESTful API for e-commerce MVP using Node.js, Express and MongoDB and jwt authen
 * Sign-in: improve email authentication - token-based email confirmation after registering and updating e-mail address
 * Sign-in: add social sign-in
 * Account: add order history
+* Users: implement scopes
 * ...
